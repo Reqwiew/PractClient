@@ -1,0 +1,117 @@
+﻿@page "/service-cost"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+@using Newtonsoft.Json
+
+<PageTitle>Расчет стоимости услуг за период</PageTitle>
+
+<h3>Расчет стоимости предоставленных услуг за период</h3>
+
+<div>
+    <label for="startDate">Дата начала:</label>
+    <input type="date" id="startDate" @bind="_startDate" class="form-control" />
+
+    <label for="endDate">Дата окончания:</label>
+    <input type="date" id="endDate" @bind="_endDate" class="form-control" />
+</div>
+
+<div>
+    <button class="btn btn-primary mt-2" @onclick="FetchServiceCost">Рассчитать стоимость</button>
+</div>
+
+@if (_repairServices.Count == 0)
+{
+    <p><em>Загрузка данных...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Начало ремонта</th>
+                <th>Окончание ремонта</th>
+                <th>Стоимость</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var service in _repairServices)
+            {
+                <tr>
+                    <td>@service.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@service.EndDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@service.TotalCost:C</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p><strong>Общая стоимость услуг: @_totalCost:C</strong></p>
+}
+
+@code {
+    private DateTime _startDate = DateTime.Now.AddDays(-7);
+    private DateTime _endDate = DateTime.Now;
+    private List<RepairServiceData> _repairServices = new List<RepairServiceData>();
+    private decimal _totalCost;
+
+    private async Task FetchServiceCost()
+    {
+        string query = @"
+            query {
+                service {
+                    repairServices {
+                        repair {
+                            startDate,
+                            endDate,
+                            totalCost
+                        }
+                    }
+                }
+            }";
+
+        string queryType = "service";
+
+        try
+        {
+            
+            var result = await Query.ExecuteQueryReturnListAsync<Service>(queryType, query);
+
+            if (result == null || result.Count == 0)
+            {
+                _repairServices.Clear();
+                return;
+            }
+
+            
+            var filteredRepairServices = result
+                .SelectMany(service => service.RepairServices)
+                .Where(rs => rs.Repair != null &&
+                             rs.Repair.StartDate >= _startDate &&
+                             (rs.Repair.EndDate == null || rs.Repair.EndDate <= _endDate))
+                .Select(rs => new RepairServiceData
+                    {
+                        StartDate = rs.Repair.StartDate,
+                        EndDate = rs.Repair.EndDate,
+                        TotalCost = rs.Repair.TotalCost
+                    })
+                .ToList();
+
+            _repairServices = filteredRepairServices;
+
+           
+            _totalCost = _repairServices.Sum(rs => rs.TotalCost);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Ошибка при выполнении запроса: {ex.Message}");
+            _repairServices.Clear();
+        }
+    }
+
+    public class RepairServiceData
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public decimal TotalCost { get; set; }
+    }
+}

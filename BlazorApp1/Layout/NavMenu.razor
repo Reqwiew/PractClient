@@ -1,0 +1,98 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Практика</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" style="width:400px" @onclick="ToggleNavMenu">
+    <nav class="flex-column" style="width:400px">
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="clients">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Клиенты
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="equip">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Запчасти
+            </NavLink>
+        </div>
+          <div class="nav-item px-2">
+            <NavLink class="nav-link" href="masters">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Мастера
+            </NavLink>
+        </div>
+          <div class="nav-item px-2">
+            <NavLink class="nav-link" href="part">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span>Части
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="receptionist">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Регистратор
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="repair">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Ремонты
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="service">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Услуги
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="clients1">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Карточки Клиентов
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="cost-calculator">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Калькулятор за время
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="master-repairs-cost">
+                <span class="bi bi-list-nested-nav-menu"  aria-hidden="true"></span> стоимость ремонтов мастера
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="repair-info">
+                <span class="bi bi-list-nested-nav-menu"  aria-hidden="true"></span> Информация по ремонту
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="repairInfo">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Запчасти за время
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href=" repair-parts-cost">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Запчасти для ремонта
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href=" service-cost">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Стоимость услуг за время
+            </NavLink>
+        </div>
+
+
+
+       
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

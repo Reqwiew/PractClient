@@ -1,0 +1,48 @@
+﻿@page "/service"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Service</h3>
+
+@if (_allService.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Название услуги</th>
+                <th>Цена</th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allService)
+            {
+                <tr>
+                    <td>@post.ServiceName</td>
+                    <td>@post.Price</td>
+
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Service> _allService = new List<Service>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{ service{ serviceName, price}}";
+        string queryType = "service";
+        var result = await Query.ExecuteQueryReturnListAsync<Service>(queryType, query);
+        _allService = result;
+    }
+
+}

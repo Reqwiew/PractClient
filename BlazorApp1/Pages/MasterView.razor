@@ -1,0 +1,48 @@
+﻿@page "/masters"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Мастера</h3>
+
+@if (_allMasters.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Имя</th>
+                <th>Специальность</th>
+                <th>Номер телефона</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allMasters)
+            {
+                <tr>
+                    <td>@post.FullName</td>
+                    <td>@post.Specialization</td>
+                    <td>@post.PhoneNumber</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Master> _allMasters = new List<Master>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{master{ fullName, specialization, phoneNumber}}";
+        string queryType = "master";
+        var result = await Query.ExecuteQueryReturnListAsync<Master>(queryType, query);
+        _allMasters = result;
+    }
+
+}

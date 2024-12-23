@@ -1,0 +1,99 @@
+﻿@page "/master-repairs-cost"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+
+<h3>Расчёт стоимости ремонтов мастера</h3>
+
+@if (_masters == null || _masters.Count == 0)
+{
+    <p><em>Загрузка списка мастеров...</em></p>
+}
+else
+{
+    <div class="mb-3">
+        <label for="masterSelect">Выберите мастера:</label>
+        <select id="masterSelect" class="form-select" @bind="selectedMasterId">
+            <option value="">-- Выберите мастера --</option>
+            @foreach (var master in _masters)
+            {
+                <option value="@master.Id">@master.FullName (@master.Specialization)</option>
+            }
+        </select>
+    </div>
+
+    <button class="btn btn-primary mt-3" @onclick="CalculateMasterRepairCost" disabled="@(selectedMasterId == null)">
+        Рассчитать стоимость
+    </button>
+
+    @if (calculationPerformed)
+    {
+        @if (_totalCost > 0)
+        {
+            <p class="alert alert-success">Общая стоимость ремонтов: @_totalCost:C</p>
+        }
+        else
+        {
+            <p class="alert alert-info">Нет выполненных ремонтов для выбранного мастера.</p>
+        }
+    }
+}
+
+@code {
+    private List<Master>? _masters;
+    private List<Repair>? _repairs;
+    private long? selectedMasterId; // Выбранный мастер
+    private decimal _totalCost;
+    private bool calculationPerformed = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Загружаем список мастеров
+            string masterQuery = @"
+            query {
+                master {
+                    id
+                    fullName
+                    specialization
+                    phoneNumber
+                }
+            }";
+
+            _masters = await Query.ExecuteQueryReturnListAsync<Master>("master", masterQuery);
+
+            // Загружаем список ремонтов
+            string repairQuery = @"
+            query {
+                repair {
+                    id
+                    totalCost
+                    masterId
+                }
+            }";
+
+            _repairs = await Query.ExecuteQueryReturnListAsync<Repair>("repair", repairQuery);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fetching data: {ex.Message}");
+            _masters = new List<Master>();
+            _repairs = new List<Repair>();
+        }
+    }
+
+    private void CalculateMasterRepairCost()
+    {
+        calculationPerformed = true;
+
+        if (selectedMasterId == null || _repairs == null || !_repairs.Any())
+        {
+            _totalCost = 0;
+            return;
+        }
+
+        // Считаем стоимость ремонтов выбранного мастера
+        var filteredRepairs = _repairs.Where(r => r.MasterId == selectedMasterId);
+        _totalCost = filteredRepairs.Sum(r => r.TotalCost);
+    }
+}

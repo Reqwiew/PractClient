@@ -1,0 +1,46 @@
+﻿@page "/part"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Части</h3>
+
+@if (_allParts.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Имя запчасти</th>
+                <th>Цена</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allParts)
+            {
+                <tr>
+                    <td>@post.PartName</td>
+                    <td>@post.Price</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Part> _allParts = new List<Part>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{part{ partName, price, }}";
+        string queryType = "part";
+        var result = await Query.ExecuteQueryReturnListAsync<Part>(queryType, query);
+        _allParts = result;
+    }
+
+}

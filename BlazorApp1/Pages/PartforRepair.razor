@@ -1,0 +1,125 @@
+﻿@page "/repair-parts-cost"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+
+<h3>Расчёт стоимости запчастей для ремонта</h3>
+
+@if (_repairs == null || _repairs.Count == 0)
+{
+    <p><em>Загрузка списка ремонтов...</em></p>
+}
+else
+{
+    <div class="mb-3">
+        <label for="repairSelect">Выберите ремонт:</label>
+        <select id="repairSelect" class="form-select" @bind="selectedRepairId">
+            <option value="">-- Выберите ремонт --</option>
+            @foreach (var repair in _repairs)
+            {
+                <option value="@repair.Id">Ремонт №@repair.Id</option>
+            }
+        </select>
+    </div>
+
+    <button class="btn btn-primary mt-3" @onclick="CalculateRepairPartsCost" disabled="@(selectedRepairId == null)">
+        Рассчитать стоимость запчастей
+    </button>
+
+    @if (calculationPerformed)
+    {
+        @if (_totalPartsCost > 0)
+        {
+            <p class="alert alert-success">Общая стоимость запчастей: @_totalPartsCost:C</p>
+        }
+        else
+        {
+            <p class="alert alert-info">Для выбранного ремонта нет использованных запчастей.</p>
+        }
+    }
+}
+
+@code {
+    private List<Repair>? _repairs;
+    private long? selectedRepairId; // Выбранный ремонт
+    private decimal _totalPartsCost;
+    private bool calculationPerformed = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Загружаем список ремонтов
+            string repairQuery = @"
+            query {
+                repair {
+                    id
+                    totalCost
+                }
+            }";
+
+            _repairs = await Query.ExecuteQueryReturnListAsync<Repair>("repair", repairQuery);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fetching data: {ex.Message}");
+            _repairs = new List<Repair>();
+        }
+    }
+
+    private async Task CalculateRepairPartsCost()
+    {
+        calculationPerformed = true;
+
+        if (selectedRepairId == null || _repairs == null || !_repairs.Any())
+        {
+            _totalPartsCost = 0;
+            return;
+        }
+
+        // Получаем данные о запчастях для выбранного ремонта
+        var repairQuery = $@"
+        query {{
+            repair(where: {{id: {{eq: {selectedRepairId}}}}}) {{
+                usedParts {{
+                    part {{
+                        partName,
+                        price
+                    }},
+                    quantity
+                }}
+            }}
+        }}";
+
+        var repairData = await Query.ExecuteQueryReturnListAsync<RepairData>("repair", repairQuery);
+
+        if (repairData != null && repairData.Any())
+        {
+            var usedParts = repairData.FirstOrDefault()?.UsedParts;
+
+            if (usedParts != null)
+            {
+                _totalPartsCost = usedParts.Sum(up => up.Part.Price * up.Quantity);
+            }
+            else
+            {
+                _totalPartsCost = 0;
+            }
+        }
+        else
+        {
+            _totalPartsCost = 0;
+        }
+    }
+
+    // Модели данных для запчастей
+    public class RepairData
+    {
+        public List<UsedPartData> UsedParts { get; set; } = new List<UsedPartData>();
+    }
+
+    public class UsedPartData
+    {
+        public Part Part { get; set; }
+        public int Quantity { get; set; }
+    }
+}

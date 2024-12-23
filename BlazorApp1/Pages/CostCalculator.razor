@@ -1,0 +1,88 @@
+﻿@page "/cost-calculator"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+
+<h3>Расчёт стоимости услуг</h3>
+
+@if (_repairs == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!_repairs.Any())
+{
+    <p><em>Нет данных о ремонтах</em></p>
+}
+else
+{
+    <div class="mb-3">
+        <label>Дата начала:</label>
+        <input type="date" class="form-control" @bind="startDate" />
+
+        <label class="mt-2">Дата окончания:</label>
+        <input type="date" class="form-control" @bind="endDate" />
+
+        <button class="btn btn-primary mt-3" @onclick="CalculateTotalCost">
+            Рассчитать
+        </button>
+    </div>
+
+    @if (_totalCost > 0)
+    {
+        <p class="alert alert-success">Общая стоимость услуг: @_totalCost:₽</p>
+    }
+    else if (calculationPerformed)
+    {
+        <p class="alert alert-info">Нет завершённых ремонтов в указанном периоде.</p>
+    }
+}
+
+@code {
+    private List<Repair>? _repairs;
+    private DateTime startDate = DateTime.Now.AddMonths(-1); 
+    private DateTime endDate = DateTime.Now;
+    private decimal _totalCost;
+    private bool calculationPerformed = false; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string query = @"
+            query {
+                repair {
+                    id
+                    startDate
+                    endDate
+                    totalCost
+                }
+            }";
+
+            _repairs = await Query.ExecuteQueryReturnListAsync<Repair>("repair", query);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fetching repairs: {ex.Message}");
+            _repairs = new List<Repair>(); 
+        }
+    }
+
+    private void CalculateTotalCost()
+    {
+        calculationPerformed = true;
+
+        if (_repairs == null || !_repairs.Any())
+        {
+            _totalCost = 0; 
+            return;
+        }
+
+        
+        var filteredRepairs = _repairs.Where(repair =>
+            repair.EndDate.HasValue && 
+            repair.EndDate.Value.Date >= startDate.Date &&
+            repair.EndDate.Value.Date <= endDate.Date);
+
+       
+        _totalCost = filteredRepairs.Sum(repair => repair.TotalCost);
+    }
+}

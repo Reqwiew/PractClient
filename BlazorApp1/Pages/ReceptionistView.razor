@@ -1,0 +1,46 @@
+﻿@page "/receptionist"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Регистратор</h3>
+
+@if (_allReceptionist.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Имя регистратора</th>
+                <th>Номер телефона</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allReceptionist)
+            {
+                <tr>
+                    <td>@post.FullName</td>
+                    <td>@post.PhoneNumber</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Receptionist> _allReceptionist = new List<Receptionist>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{ reseprionist{ fullName, phoneNumber}}";
+        string queryType = "reseprionist";
+        var result = await Query.ExecuteQueryReturnListAsync<Receptionist>(queryType, query);
+        _allReceptionist = result;
+    }
+
+}

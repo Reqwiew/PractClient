@@ -1,0 +1,137 @@
+﻿@page "/repairInfo"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+@using Newtonsoft.Json
+
+<PageTitle>Информация о ремонте</PageTitle>
+
+<h3>Информация о ремонте</h3>
+
+<div>
+    <label for="startDate">Дата начала:</label>
+    <input type="date" id="startDate" @bind="_startDate" class="form-control" />
+
+    <label for="endDate">Дата окончания:</label>
+    <input type="date" id="endDate" @bind="_endDate" class="form-control" />
+</div>
+<div>
+    <button class="btn btn-primary mt-2" @onclick="FetchRepairInfo">Поиск</button>
+</div>
+@if (_allRepairs.Count == 0)
+{
+    <p>
+        <em>Загрузка...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Начало ремонта</th>
+                <th>Окончание ремонта</th>
+                <th>Бренд оборудования</th>
+                <th>Модель оборудования</th>
+                <th>Серийный номер</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var repair in _allRepairs)
+            {
+                <tr>
+                    <td>@repair.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td>@repair.EndDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@repair.EquipmentBrand</td>
+                    <td>@repair.EquipmentModel</td>
+                    <td>@repair.EquipmentSerialNumber</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private DateTime _startDate = DateTime.Now.AddDays(-7);
+    private DateTime _endDate = DateTime.Now;
+    private List<RepairData> _allRepairs = new List<RepairData>();
+
+    private async Task<List<RepairData>?> FetchRepairInfo()
+    {
+        
+        string query = @"
+    query {
+        usedPart {
+            repair {
+                startDate
+                endDate
+                equipment {
+                    brand
+                    model
+                    serialNumber
+                }
+            }
+        }
+    }";
+
+        string queryType = "usedPart";
+
+        try
+        {
+           
+            var result = await Query.ExecuteQueryReturnListAsync<UsedPart>(queryType, query);
+
+           
+            if (result == null)
+            {
+                Console.WriteLine("Результат запроса пустой!");
+            }
+            else
+            {
+                Console.WriteLine("Результат запроса: " + JsonConvert.SerializeObject(result, Formatting.Indented));
+            }
+
+            
+            if (result == null)
+            {
+                throw new InvalidOperationException("Ответ от сервера пустой или null");
+            }
+
+           
+            var filteredRepairs = result
+                .Where(part => part.Repair != null && part.Repair.Equipment != null &&
+                               part.Repair.StartDate >= _startDate &&
+                               (part.Repair.EndDate == null || part.Repair.EndDate <= _endDate))
+                .Select(part => new RepairData
+                    {
+                        StartDate = part.Repair.StartDate,
+                        EndDate = part.Repair.EndDate,
+                        EquipmentBrand = part.Repair.Equipment?.Brand ?? "Не указано",
+                        EquipmentModel = part.Repair.Equipment?.Model ?? "Не указано",
+                        EquipmentSerialNumber = part.Repair.Equipment?.SerialNumber ?? "Не указано"
+                    })
+                .ToList();
+
+            _allRepairs = filteredRepairs;
+
+            return filteredRepairs;
+        }
+        catch (Exception ex)
+        {
+            
+            Console.WriteLine($"Ошибка при выполнении запроса: {ex.Message}");
+            return new List<RepairData>(); 
+        }
+    }
+
+
+
+
+    public class RepairData
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string EquipmentBrand { get; set; }
+        public string EquipmentModel { get; set; }
+        public string EquipmentSerialNumber { get; set; }
+    }
+}

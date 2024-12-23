@@ -1,0 +1,137 @@
+﻿@page "/repair-info"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+
+<h3>Справка о ремонте</h3>
+
+<div class="mb-3">
+    <label for="repairId" class="form-label">Введите ID ремонта:</label>
+    <input id="repairId" type="number" class="form-control" @bind="RepairId" placeholder="Например, 123" />
+    <button class="btn btn-primary mt-2" @onclick="LoadRepairInfo">Загрузить справку</button>
+</div>
+
+@if (_repair != null)
+{
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Справка о ремонте №@_repair.Id</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Дата начала:</strong> @_repair.StartDate.ToString("yyyy-MM-dd")</p>
+            <p><strong>Дата окончания:</strong> @(_repair.EndDate.HasValue ? _repair.EndDate.Value.ToString("yyyy-MM-dd") : "В процессе")</p>
+            <p><strong>Мастер:</strong> @_repair.Master?.FullName</p>
+            <p><strong>Итого стоимость:</strong> @_repair.TotalCost:C</p>
+
+            <h5>Услуги:</h5>
+            @if (_repair.RepairServices == null || !_repair.RepairServices.Any())
+            {
+                <p>Услуги отсутствуют</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var service in _repair.RepairServices)
+                    {
+                        <li>@service.Service.ServiceName - @service.Service.Price:₽</li>
+                    }
+                </ul>
+            }
+
+            <h5>Использованные части:</h5>
+            @if (_repair.UsedParts == null || !_repair.UsedParts.Any())
+            {
+                <p>Части отсутствуют</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var part in _repair.UsedParts)
+                    {
+                        <li>@part.Part.Price - Количество: @part.Quantity</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
+else if (IsLoading)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (ShowNoRepairMessage)
+{
+    <p class="text-danger">Ремонт с указанным ID не найден.</p>
+}
+
+@code {
+    private long RepairId { get; set; }
+    private Repair? _repair;
+    private bool IsLoading = false;
+    private bool ShowNoRepairMessage = false;
+
+    private async Task LoadRepairInfo()
+    {
+        if (RepairId <= 0)
+        {
+            ShowNoRepairMessage = true;
+            _repair = null;
+            return;
+        }
+
+        try
+        {
+            IsLoading = true;
+            ShowNoRepairMessage = false;
+
+            // Формируем GraphQL-запрос
+            string query = $@"
+        query {{
+            repair(where: {{ id: {{ eq: {RepairId} }} }}) {{
+                id
+                startDate
+                endDate
+                totalCost
+                master {{
+                    fullName
+                }}
+                repairServices {{
+                    service {{
+                        serviceName
+                        price
+                    }}
+                }}
+                usedParts {{
+                    part {{
+                        partName
+                        price
+                    }}
+                    quantity
+                }}
+            }}
+        }}";
+
+            // Выполняем запрос и обрабатываем ответ
+            var response = await Query.ExecuteQueryAsync<List<Repair>>("repair", query);
+
+            // Проверяем, есть ли результаты
+            if (response != null && response.Any())
+            {
+                _repair = response.First(); // Берём первый элемент массива
+            }
+            else
+            {
+                ShowNoRepairMessage = true;
+                _repair = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Ошибка при загрузке информации о ремонте: {ex.Message}");
+            ShowNoRepairMessage = true;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

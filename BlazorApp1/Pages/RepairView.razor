@@ -1,0 +1,54 @@
+﻿@page "/repair"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Ремонты</h3>
+
+@if (_allrepair.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Модель детали</th>
+                <th>Серийный номер</th>
+                <th>Цена ремонта</th>
+                <th>начало ремонта</th>
+                <th>Конец ремонта</th>
+                <th>Имя мастера</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allrepair)
+            {
+                <tr>
+                    <td>@post.Equipment.Model</td>
+                    <td>@post.Equipment.SerialNumber</td>
+                    <td>@post.TotalCost</td>
+                    <td>@post.StartDate</td>
+                    <td>@post.EndDate</td>
+                    <td>@post.Master.FullName</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Repair> _allrepair = new List<Repair>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{ repair{ equipment{ model, serialNumber}, totalCost,  startDate, endDate, master{ fullName} }}";
+        string queryType = "repair";
+        var result = await Query.ExecuteQueryReturnListAsync<Repair>(queryType, query);
+        _allrepair = result;
+    }
+
+}

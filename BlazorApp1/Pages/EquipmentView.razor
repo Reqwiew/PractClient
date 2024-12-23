@@ -1,0 +1,53 @@
+﻿@page "/equip"
+@using BlazorApp1.DataAccess
+@using BlazorApp1.DataAccess.Model
+<h3>Все запчасти</h3>
+
+@if (_allEquipment.Count == 0)
+{
+    <p>
+        <em>Loading ...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Марка</th>
+            <th>Модель</th>
+            <th>Серийный номер</th>
+            <th>Вид</th>
+            <th>Имя клиента</th>
+            <th>Номер клиента</th>
+        </tr>
+        </thead>
+        <tbody>
+            @foreach (var post in _allEquipment)
+        {
+            <tr>
+                <td>@post.Brand</td>
+                <td>@post.Model</td>
+                <td>@post.SerialNumber</td>
+                <td>@post.EquipmentType</td>
+                <td>@post.Client.FullName</td>
+                <td>@post.Client.PhoneNumber</td>
+
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Equipment> _allEquipment = new List<Equipment>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string query = "query{equipment{brand, model, serialNumber, equipmentType, client{fullName, phoneNumber}}}";
+        string queryType = "equipment";
+        var result = await Query.ExecuteQueryReturnListAsync<Equipment>(queryType, query);
+        _allEquipment = result;
+    }
+
+}
